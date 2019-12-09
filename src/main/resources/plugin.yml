@@ -1,0 +1,7 @@
+name: UhcStats
+main: com.gmail.mezymc.stats.UhcStats
+version: ${project.version}
+description: Adds a stat system to UhcCore (https://www.spigotmc.org/resources/uhc-core-automated-uhc-for-minecraft-1-8-1-14.47572/)
+author: Mezy
+soft-depend: [UhcCore, PlaceholderAPI]
+api-version: 1.13

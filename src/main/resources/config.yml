@@ -1,0 +1,24 @@
+# MySql details, in this database the stats will be stored.
+sql:
+  ip: 'localhost'
+  port: 3306
+  username: 'username'
+  password: 'password123'
+  database: 'minecraft'
+
+# Set to false when you allow cracked clients.
+online-mode: true
+
+stats-command:
+  enabled: true
+  command: '/uhcstats'
+  messages-own:
+    - '&cYour stats:'
+    - '&aKills: %uhc_kill%'
+    - '&aWins: %uhc_win%'
+    - '&aDeath: %uhc_death%'
+  messages-other:
+    - '&c%player%''s stats:'
+    - '&aKills: %uhc_kill%'
+    - '&aWins: %uhc_win%'
+    - '&aDeath: %uhc_death%'

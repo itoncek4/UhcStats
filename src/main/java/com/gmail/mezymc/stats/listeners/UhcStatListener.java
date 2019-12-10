@@ -1,8 +1,8 @@
 package com.gmail.mezymc.stats.listeners;
 
-import com.gmail.mezymc.stats.StatType;
-import com.gmail.mezymc.stats.UhcStats;
+import com.gmail.mezymc.stats.*;
 import com.gmail.val59000mc.events.UhcWinEvent;
+import com.gmail.val59000mc.exceptions.UhcPlayerNotOnlineException;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -11,41 +11,40 @@ import org.bukkit.event.entity.PlayerDeathEvent;
 
 public class UhcStatListener implements Listener{
 
-    private UhcStats uhcStats;
+    private StatsManager statsManager;
+    private GameMode gameMode;
 
-    public UhcStatListener(UhcStats uhcStats){
-        this.uhcStats = uhcStats;
+    public UhcStatListener(StatsManager statsManager){
+        this.statsManager = statsManager;
+        gameMode = statsManager.getServerGameMode();
     }
 
     @EventHandler
     public void onPlayerDeath(PlayerDeathEvent e) {
-        final Player player = e.getEntity();
+        Player player = e.getEntity();
 
-        Bukkit.getScheduler().runTaskAsynchronously(uhcStats, new Runnable() {
-            @Override
-            public void run() {
-                uhcStats.addOneToPlayerStats(player.getUniqueId(), player.getName(), StatType.DEATH);
-            }
-        });
+        StatsPlayer statsPlayer = statsManager.getStatsPlayer(player);
+        statsPlayer.addOneToStats(gameMode, StatType.DEATH);
 
-        if (e.getEntity().getKiller() != null){
-            Bukkit.getScheduler().runTaskAsynchronously(uhcStats, new Runnable() {
-                @Override
-                public void run() {
-                    uhcStats.addOneToPlayerStats(player.getKiller().getUniqueId(), player.getKiller().getName(), StatType.KILL);
-                }
-            });
+        if (player.getKiller() != null) {
+            StatsPlayer statsKiller = statsManager.getStatsPlayer(player.getKiller());
+            statsKiller.addOneToStats(gameMode, StatType.KILL);
         }
     }
 
     @EventHandler
-    public void onGameWin(final UhcWinEvent e){
-        Bukkit.getScheduler().runTaskAsynchronously(uhcStats, new Runnable() {
-            @Override
-            public void run() {
-                e.getWinners().forEach(uhcPlayer -> uhcStats.addOneToPlayerStats(uhcPlayer.getUuid(), uhcPlayer.getName(), StatType.WIN));
+    public void onGameWin(UhcWinEvent e){
+        e.getWinners().forEach(uhcPlayer -> {
+            StatsPlayer statsPlayer = statsManager.getStatsPlayer(uhcPlayer.getUuid(), uhcPlayer.getName());
+            if (statsPlayer != null){
+                statsPlayer.addOneToStats(gameMode, StatType.WIN);
+            }else{
+                Bukkit.getLogger().warning("[UhcStats] Failed to add win to stats for " + uhcPlayer.getName());
             }
         });
+
+        // Push all stats
+        Bukkit.getScheduler().runTaskAsynchronously(UhcStats.getPlugin(), () -> statsManager.pushAllStats());
     }
 
 }

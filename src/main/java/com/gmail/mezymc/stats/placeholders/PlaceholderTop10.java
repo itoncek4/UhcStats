@@ -39,7 +39,7 @@ public class PlaceholderTop10 extends PlaceholderExpansion{
     public String onPlaceholderRequest(Player p, String params) {
         if (top10 == null || System.currentTimeMillis()-lastUpdated < UhcStats.UPDATE_DELAY){
             // update top 10
-            top10 = uhcStats.getTop10(statType);
+            //top10 = uhcStats.getTop10(statType);
             lastUpdated = System.currentTimeMillis();
         }
 

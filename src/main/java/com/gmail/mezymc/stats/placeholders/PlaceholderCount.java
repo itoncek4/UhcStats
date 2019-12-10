@@ -1,16 +1,15 @@
 package com.gmail.mezymc.stats.placeholders;
 
-import com.gmail.mezymc.stats.StatType;
-import com.gmail.mezymc.stats.UhcStats;
+import com.gmail.mezymc.stats.*;
 import me.clip.placeholderapi.expansion.PlaceholderExpansion;
 import org.bukkit.entity.Player;
 
 public class PlaceholderCount extends PlaceholderExpansion{
 
-    private UhcStats uhcStats;
+    private StatsManager statsManager;
 
-    public PlaceholderCount(UhcStats uhcStats){
-        this.uhcStats = uhcStats;
+    public PlaceholderCount(StatsManager statsManager){
+        this.statsManager = statsManager;
     }
 
     @Override
@@ -25,7 +24,7 @@ public class PlaceholderCount extends PlaceholderExpansion{
 
     @Override
     public String getVersion() {
-        return uhcStats.getDescription().getVersion();
+        return UhcStats.getPlugin().getDescription().getVersion();
     }
 
     @Override
@@ -39,7 +38,8 @@ public class PlaceholderCount extends PlaceholderExpansion{
             return "Invalid stat-type";
         }
 
-        return String.valueOf(uhcStats.getCashedStats(p.getUniqueId(), p.getName()).getStats().get(statType));
+        StatsPlayer statsPlayer = statsManager.getStatsPlayer(p);
+        return String.valueOf(statsPlayer.getGameModeStats(GameMode.DEFAULT).get(statType));
     }
 
 }

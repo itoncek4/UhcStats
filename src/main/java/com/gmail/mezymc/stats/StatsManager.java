@@ -1,6 +1,7 @@
 package com.gmail.mezymc.stats;
 
 import com.gmail.mezymc.stats.listeners.ConnectionListener;
+import com.gmail.mezymc.stats.listeners.GuiListener;
 import com.gmail.mezymc.stats.listeners.StatCommandListener;
 import com.gmail.mezymc.stats.listeners.UhcStatListener;
 import com.gmail.val59000mc.configuration.YamlFile;
@@ -30,6 +31,8 @@ public class StatsManager{
     private String sqlIp, sqlUsername, sqlPassword, sqlDatabase;
     private int sqlPort;
 
+    private String guiTitle;
+
     private Set<GameMode> gameModes;
     private Set<StatsPlayer> cachedPlayers;
     private boolean isUhcServer;
@@ -43,6 +46,10 @@ public class StatsManager{
 
     public static StatsManager getStatsManager() {
         return statsManager;
+    }
+
+    public String getGuiTitle() {
+        return guiTitle;
     }
 
     /**
@@ -192,6 +199,8 @@ public class StatsManager{
             return false;
         }
 
+        guiTitle = ChatColor.translateAlternateColorCodes('&', cfg.getString("gui-title", "&6&lUHC Stats"));
+
         // Check if UhcServer
         isUhcServer = Bukkit.getServer().getPluginManager().getPlugin("UhcCore") != null;
 
@@ -247,6 +256,7 @@ public class StatsManager{
 
     void registerListeners(){
         Bukkit.getPluginManager().registerEvents(new ConnectionListener(this), UhcStats.getPlugin());
+        Bukkit.getPluginManager().registerEvents(new GuiListener(), UhcStats.getPlugin());
         Bukkit.getPluginManager().registerEvents(new StatCommandListener(cfg.getString("stats-command", "/stats")), UhcStats.getPlugin());
 
         if (isUhcServer){
@@ -310,7 +320,7 @@ public class StatsManager{
     }
 
     public Inventory loadStatsUI(StatsPlayer statsPlayer){
-        Inventory inv = Bukkit.createInventory(null, 1*9, ChatColor.GOLD + ChatColor.BOLD.toString() + "Stats");
+        Inventory inv = Bukkit.createInventory(null, 9, guiTitle);
 
         for (GameMode gameMode : gameModes){
             Map<StatType, Integer> gameModeStats = statsPlayer.getGameModeStats(gameMode);

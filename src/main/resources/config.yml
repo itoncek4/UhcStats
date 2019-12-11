@@ -13,6 +13,8 @@ online-mode: true
 # When typing this command a GUI will open where people can view their stats.
 stats-command: '/stats'
 
+gui-title: '&6&lUHC Stats'
+
 # If you have multiple UHC GameModes on your server you can configure them here. If you only have one you can delete this section.
 gamemodes:
   # The current server GameMode. If this is a UHC server under what GameMode should the statistics be saved?

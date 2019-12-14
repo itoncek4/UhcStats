@@ -29,3 +29,15 @@ gamemodes:
   uhc_run:
     name: '&aUhc Run'
     display-item: '{"type":"DIAMOND_PICKAXE"}'
+
+leaderboards: {}
+
+leaderboards-sample:
+  board-1:
+    stat-type: KILL
+    gamemode: cutclean
+    location:
+      world: world
+      x: 0
+      y: 50
+      z: 0

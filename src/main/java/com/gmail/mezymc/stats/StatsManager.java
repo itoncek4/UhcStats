@@ -4,6 +4,10 @@ import com.gmail.mezymc.stats.listeners.ConnectionListener;
 import com.gmail.mezymc.stats.listeners.GuiListener;
 import com.gmail.mezymc.stats.listeners.StatCommandListener;
 import com.gmail.mezymc.stats.listeners.UhcStatListener;
+import com.gmail.mezymc.stats.scoreboards.BoardPosition;
+import com.gmail.mezymc.stats.scoreboards.LeaderBoard;
+import com.gmail.mezymc.stats.scoreboards.LeaderboardUpdateThread;
+import com.gmail.val59000mc.UhcCore;
 import com.gmail.val59000mc.configuration.YamlFile;
 import com.gmail.val59000mc.exceptions.ParseException;
 import com.gmail.val59000mc.utils.JsonItemUtils;
@@ -35,6 +39,7 @@ public class StatsManager{
 
     private Set<GameMode> gameModes;
     private Set<StatsPlayer> cachedPlayers;
+    private Set<LeaderBoard> leaderBoards;
     private boolean isUhcServer;
     private boolean onlineMode;
     private GameMode serverGameMode;
@@ -120,6 +125,10 @@ public class StatsManager{
      */
     public StatsPlayer getStatsPlayer(Player player){
         return getStatsPlayer(player.getUniqueId(), player.getName(), false, false);
+    }
+
+    public boolean isOnlineMode() {
+        return onlineMode;
     }
 
     public void playerLeavesTheGame(Player player){
@@ -392,6 +401,42 @@ public class StatsManager{
         return stats;
     }
 
+    public List<BoardPosition> getTop10(LeaderBoard leaderBoard, StatType statType, GameMode gameMode){
+        try {
+            Connection connection = getSqlConnection();
+            Statement statement = connection.createStatement();
+            ResultSet resultSet = statement.executeQuery("SELECT `id`, `"+statType.getColumnName()+"` FROM `"+gameMode.getTableName()+"` ORDER BY `"+statType.getColumnName()+"` DESC LIMIT 10");
+            List<BoardPosition> boardPositions = new ArrayList<>();
+
+            int pos = 1;
+            while (resultSet.next()){
+                BoardPosition boardPosition = leaderBoard.getBoardPosition(pos);
+                if (boardPosition == null) {
+                    boardPosition = new BoardPosition(
+                            leaderBoard,
+                            pos,
+                            resultSet.getString("id"),
+                            resultSet.getInt(statType.getColumnName())
+                    );
+                }else{
+                    boardPosition.update(resultSet.getString("id"), resultSet.getInt(statType.getColumnName()));
+                }
+
+                boardPositions.add(boardPosition);
+                pos++;
+            }
+
+            resultSet.close();
+            statement.close();
+            connection.close();
+
+            return boardPositions;
+        }catch (SQLException ex){
+            ex.printStackTrace();
+            return null;
+        }
+    }
+
     private void pushGameModeStats(Connection connection, StatsPlayer statsPlayer, GameMode gameMode){
         Map<StatType, Integer> stats = statsPlayer.getGameModeStats(gameMode);
 
@@ -442,6 +487,27 @@ public class StatsManager{
         }
 
         return stats;
+    }
+
+    public void loadLeaderBoards(YamlFile cfg){
+        ConfigurationSection cfgSection = cfg.getConfigurationSection("leaderboards");
+        leaderBoards = new HashSet<>();
+
+        for (String key : cfgSection.getKeys(false)){
+            StatType statType = StatType.valueOf(cfgSection.getString(key + ".stat-type"));
+            GameMode gameMode = getGameMode(cfgSection.getString(key + ".gamemode", "uhc"));
+
+            LeaderBoard leaderBoard = new LeaderBoard(key, statType, gameMode);
+            leaderBoards.add(leaderBoard);
+            leaderBoard.instantiate(cfg.getConfigurationSection(key));
+        }
+
+        // start thread
+        Bukkit.getScheduler().runTaskAsynchronously(UhcStats.getPlugin(), new LeaderboardUpdateThread(this));
+    }
+
+    public Set<LeaderBoard> getLeaderBoards(){
+        return leaderBoards;
     }
 
 }

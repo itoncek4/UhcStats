@@ -7,8 +7,6 @@ import com.gmail.mezymc.stats.listeners.UhcStatListener;
 import com.gmail.mezymc.stats.scoreboards.BoardPosition;
 import com.gmail.mezymc.stats.scoreboards.LeaderBoard;
 import com.gmail.mezymc.stats.scoreboards.LeaderboardUpdateThread;
-import com.gmail.val59000mc.UhcCore;
-import com.gmail.val59000mc.configuration.YamlFile;
 import com.gmail.val59000mc.exceptions.ParseException;
 import com.gmail.val59000mc.utils.JsonItemUtils;
 import org.apache.commons.lang.Validate;
@@ -16,6 +14,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.InvalidConfigurationException;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
@@ -30,7 +29,7 @@ public class StatsManager{
 
     private static StatsManager statsManager;
 
-    private YamlFile cfg;
+    private YamlConfiguration cfg;
 
     private String sqlIp, sqlUsername, sqlPassword, sqlDatabase;
     private int sqlPort;
@@ -185,10 +184,10 @@ public class StatsManager{
             UhcStats.getPlugin().saveDefaultConfig();
         }
 
-        cfg = new YamlFile(file);
+        cfg = new YamlConfiguration();
 
         try {
-            cfg.load();
+            cfg.load(file);
         }catch (IOException | InvalidConfigurationException ex){
             Bukkit.getLogger().warning("[UhcStats] Failed to load config! Disabling plugin!");
             ex.printStackTrace();
@@ -489,7 +488,7 @@ public class StatsManager{
         return stats;
     }
 
-    public void loadLeaderBoards(YamlFile cfg){
+    public void loadLeaderBoards(YamlConfiguration cfg){
         ConfigurationSection cfgSection = cfg.getConfigurationSection("leaderboards");
         leaderBoards = new HashSet<>();
 

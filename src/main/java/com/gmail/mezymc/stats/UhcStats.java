@@ -1,5 +1,6 @@
 package com.gmail.mezymc.stats;
 
+import com.gmail.mezymc.stats.scoreboards.LeaderBoard;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -30,6 +31,13 @@ public class UhcStats extends JavaPlugin{
         });
 
         statsManager.registerPlaceholders();
+    }
+
+    @Override
+    public void onDisable() {
+        for (LeaderBoard leaderBoard : StatsManager.getStatsManager().getLeaderBoards()){
+            leaderBoard.unload();
+        }
     }
 
     public static UhcStats getPlugin(){

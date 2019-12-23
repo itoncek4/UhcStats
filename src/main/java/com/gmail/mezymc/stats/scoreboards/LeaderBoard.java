@@ -4,6 +4,7 @@ import com.gmail.mezymc.stats.GameMode;
 import com.gmail.mezymc.stats.StatType;
 import com.gmail.mezymc.stats.StatsManager;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.ArmorStand;
@@ -19,6 +20,7 @@ public class LeaderBoard{
     private List<BoardPosition> boardPositions;
     private GameMode gameMode;
     private Location location;
+    private String format;
 
     private ArmorStand armorStand1;
     private ArmorStand armorStand2;
@@ -46,10 +48,21 @@ public class LeaderBoard{
                 cfg.getDouble("location.z")
         );
 
+        String title = cfg.getString("title");
+        format = cfg.getString("lines");
+
+        title = ChatColor.translateAlternateColorCodes('&', title);
+        format = ChatColor.translateAlternateColorCodes('&', format);
+
         armorStand1 = spawnArmorStand(
                 new Location(location.getWorld(), location.getX(), location.getY() - .3, location.getZ()),
-                "§3§l" + statType.getName().toUpperCase() + " " + gameMode.toString());
+                title
+        );
         armorStand2 = null;
+    }
+
+    public String getFormat(){
+        return format;
     }
 
     private ArmorStand spawnArmorStand(Location location, String text){
@@ -79,6 +92,11 @@ public class LeaderBoard{
         if (armorStand2 != null) {
             armorStand2.remove();
         }
+
+        if (boardPositions == null){
+            return;
+        }
+
         for (BoardPosition boardPosition : boardPositions){
             boardPosition.remove();
         }

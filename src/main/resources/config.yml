@@ -36,6 +36,8 @@ leaderboards-sample:
   board-1:
     stat-type: KILL
     gamemode: cutclean
+    title: '&aCutClean top 10 kills'
+    lines: '&a%number%. %player%: %count%'
     location:
       world: world
       x: 0

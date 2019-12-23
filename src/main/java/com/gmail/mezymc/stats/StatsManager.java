@@ -245,6 +245,8 @@ public class StatsManager{
             }
 
             Bukkit.getLogger().info("[UhcStats] Loaded " + gameModes.size() + " GameModes!");
+
+            Bukkit.getScheduler().runTaskLater(UhcStats.getPlugin(), () -> loadLeaderBoards(cfg), 10);
         }
 
 
@@ -488,21 +490,33 @@ public class StatsManager{
         return stats;
     }
 
-    public void loadLeaderBoards(YamlConfiguration cfg){
+    private void loadLeaderBoards(YamlConfiguration cfg){
         ConfigurationSection cfgSection = cfg.getConfigurationSection("leaderboards");
         leaderBoards = new HashSet<>();
+
+        if (cfgSection == null){
+            Bukkit.getLogger().info("[UhcStats] Loaded 0 leaderboards.");
+            return;
+        }
 
         for (String key : cfgSection.getKeys(false)){
             StatType statType = StatType.valueOf(cfgSection.getString(key + ".stat-type"));
             GameMode gameMode = getGameMode(cfgSection.getString(key + ".gamemode", "uhc"));
 
+            if (gameMode == null){
+                Bukkit.getLogger().warning("[UhcStats] Failed to load " + key + " leaderboard, make sure you have it's gamemode configured in the config.");
+                continue;
+            }
+
             LeaderBoard leaderBoard = new LeaderBoard(key, statType, gameMode);
             leaderBoards.add(leaderBoard);
-            leaderBoard.instantiate(cfg.getConfigurationSection(key));
+            leaderBoard.instantiate(cfgSection.getConfigurationSection(key));
         }
 
+        Bukkit.getLogger().info("[UhcStats] Loaded "+leaderBoards.size()+" leaderboards.");
+
         // start thread
-        Bukkit.getScheduler().runTaskAsynchronously(UhcStats.getPlugin(), new LeaderboardUpdateThread(this));
+        Bukkit.getScheduler().runTaskLaterAsynchronously(UhcStats.getPlugin(), new LeaderboardUpdateThread(this), 10);
     }
 
     public Set<LeaderBoard> getLeaderBoards(){

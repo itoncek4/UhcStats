@@ -23,7 +23,11 @@ public class BoardPosition {
         this.position = position;
         this.playerId = playerId;
         this.value = value;
-        playerName = null;
+
+        if (StatsManager.getStatsManager().isOnlineMode()){
+            // fetch player name from uuid
+            playerName = MojangUtils.getPlayerName(UUID.fromString(playerId));
+        }
     }
 
     public int getPosition() {
@@ -59,7 +63,11 @@ public class BoardPosition {
     public void updateText() {
         ArmorStand armorStand = getArmorStand();
         if (armorStand != null) {
-            getArmorStand().setCustomName("§6"+position+". §b"+getPlayerName()+" §8- §6" + value);
+            String format = parent.getFormat();
+            format = format.replace("%number%", String.valueOf(getPosition()));
+            format = format.replace("%player%", getPlayerName());
+            format = format.replace("%count%", String.valueOf(getValue()));
+            getArmorStand().setCustomName(format);
         }
     }
 

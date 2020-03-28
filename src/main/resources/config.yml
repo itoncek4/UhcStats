@@ -34,10 +34,13 @@ leaderboards: {}
 
 leaderboards-sample:
   board-1:
+    # Choose from: KILL, DEATH and WIN
     stat-type: KILL
     gamemode: cutclean
     title: '&aCutClean top 10 kills'
+    # Layout of the leader-board lines.
     lines: '&a%number%. %player%: %count%'
+    # Location where the leader-board should spawn.
     location:
       world: world
       x: 0

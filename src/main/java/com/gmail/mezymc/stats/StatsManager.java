@@ -7,11 +7,10 @@ import com.gmail.mezymc.stats.listeners.UhcStatListener;
 import com.gmail.mezymc.stats.scoreboards.BoardPosition;
 import com.gmail.mezymc.stats.scoreboards.LeaderBoard;
 import com.gmail.mezymc.stats.scoreboards.LeaderboardUpdateThread;
-import com.gmail.val59000mc.exceptions.ParseException;
-import com.gmail.val59000mc.utils.JsonItemUtils;
 import org.apache.commons.lang.Validate;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -232,9 +231,9 @@ public class StatsManager{
 
                 ItemStack itemStack;
 
-                try {
-                    itemStack = JsonItemUtils.getItemFromJson(displayItem);
-                }catch (ParseException ex){
+                try{
+                    itemStack = new ItemStack(Material.valueOf(displayItem));
+                }catch (IllegalArgumentException ex){
                     Bukkit.getLogger().severe("[UhcStats] Invalid display item! " + displayItem);
                     ex.printStackTrace();
                     continue;

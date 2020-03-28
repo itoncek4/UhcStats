@@ -2,7 +2,6 @@ package com.gmail.mezymc.stats.listeners;
 
 import com.gmail.mezymc.stats.*;
 import com.gmail.val59000mc.events.UhcWinEvent;
-import com.gmail.val59000mc.exceptions.UhcPlayerNotOnlineException;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;

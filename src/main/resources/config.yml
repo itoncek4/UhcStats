@@ -24,11 +24,11 @@ gamemodes:
   cutclean:
     # Name of the GameMode in the stats GUI
     name: '&aCutClean'
-    # Display Item in the stats GUI (You can generate this item using the /iteminfo command).
-    display-item: '{"type":"IRON_INGOT"}'
+    # Display Item in the stats GUI (You can find a list of materials here: https://hub.spigotmc.org/javadocs/spigot/org/bukkit/Material.html).
+    display-item: 'IRON_INGOT'
   uhc_run:
     name: '&aUhc Run'
-    display-item: '{"type":"DIAMOND_PICKAXE"}'
+    display-item: 'DIAMOND_PICKAXE'
 
 leaderboards: {}
 

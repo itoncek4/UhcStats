@@ -56,6 +56,28 @@ public class MySqlConnector implements DatabaseConnector{
     }
 
     @Override
+    public boolean doesTableExists(String tableName){
+        Connection connection;
+        Statement statement;
+        try{
+            connection = getSqlConnection();
+            statement = connection.createStatement();
+        }catch (SQLException ex){
+            ex.printStackTrace();
+            throw new RuntimeException("Failed to create statement!");
+        }
+
+        try{
+            statement.executeQuery("SELECT 1 FROM `"+tableName+"` LIMIT 1;").close();
+            statement.close();
+            connection.close();
+            return true;
+        }catch (SQLException ex){
+            return false;
+        }
+    }
+
+    @Override
     public void createTable(String name, DatabaseColumn... databaseColumns){
         StringBuilder sb = new StringBuilder("CREATE TABLE `"+database+"`.`"+name+"` (");
         boolean first = true;

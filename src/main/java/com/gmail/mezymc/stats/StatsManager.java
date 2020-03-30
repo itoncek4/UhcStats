@@ -278,6 +278,10 @@ public class StatsManager{
     }
 
     void createTable(GameMode gameMode){
+        if (databaseConnector.doesTableExists(gameMode.getTableName())){
+            return;
+        }
+
         databaseConnector.createTable(
                 gameMode.getTableName(),
                 new DatabaseColumn("id", DatabaseColumn.DataType.TEXT),

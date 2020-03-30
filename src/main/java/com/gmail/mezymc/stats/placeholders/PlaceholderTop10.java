@@ -11,6 +11,7 @@ import me.clip.placeholderapi.expansion.PlaceholderExpansion;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -56,6 +57,10 @@ public class PlaceholderTop10 extends PlaceholderExpansion{
             });
 
             lastUpdated = System.currentTimeMillis();
+
+            if (top10 == null){
+                top10 = new ArrayList<>();
+            }
         }
 
         String[] args = params.split("-");

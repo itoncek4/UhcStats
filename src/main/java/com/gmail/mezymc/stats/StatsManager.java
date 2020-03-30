@@ -1,5 +1,9 @@
 package com.gmail.mezymc.stats;
 
+import com.gmail.mezymc.stats.database.DatabaseColumn;
+import com.gmail.mezymc.stats.database.DatabaseConnector;
+import com.gmail.mezymc.stats.database.MySqlConnector;
+import com.gmail.mezymc.stats.database.Position;
 import com.gmail.mezymc.stats.listeners.ConnectionListener;
 import com.gmail.mezymc.stats.listeners.GuiListener;
 import com.gmail.mezymc.stats.listeners.StatCommandListener;
@@ -7,7 +11,6 @@ import com.gmail.mezymc.stats.listeners.UhcStatListener;
 import com.gmail.mezymc.stats.scoreboards.BoardPosition;
 import com.gmail.mezymc.stats.scoreboards.LeaderBoard;
 import com.gmail.mezymc.stats.scoreboards.LeaderboardUpdateThread;
-import org.apache.commons.lang.Validate;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -21,7 +24,6 @@ import org.bukkit.inventory.meta.ItemMeta;
 
 import java.io.File;
 import java.io.IOException;
-import java.sql.*;
 import java.util.*;
 
 public class StatsManager{
@@ -30,8 +32,7 @@ public class StatsManager{
 
     private YamlConfiguration cfg;
 
-    private String sqlIp, sqlUsername, sqlPassword, sqlDatabase;
-    private int sqlPort;
+    private DatabaseConnector databaseConnector;
 
     private String guiTitle;
 
@@ -151,29 +152,14 @@ public class StatsManager{
             return;
         }
 
-        Connection connection;
-
-        try {
-            connection = getSqlConnection();
-        }catch (SQLException ex){
-            ex.printStackTrace();
-            return;
-        }
-
         for (StatsPlayer statsPlayer : cachedPlayers){
             // No stats that need to be pushed
             if (!statsPlayer.isNeedsPush()){
                 continue;
             }
 
-            pushGameModeStats(connection, statsPlayer, serverGameMode);
+            pushGameModeStats(statsPlayer, serverGameMode);
             statsPlayer.setNeedsPush(false);
-        }
-
-        try {
-            connection.close();
-        }catch (SQLException ex){
-            ex.printStackTrace();
         }
     }
 
@@ -193,18 +179,21 @@ public class StatsManager{
             return false;
         }
 
-        sqlIp = cfg.getString("sql.ip", "localhost");
-        sqlUsername = cfg.getString("sql.username", "localhost");
-        sqlPassword = cfg.getString("sql.password", "password123");
-        sqlDatabase = cfg.getString("sql.database", "minecraft");
-        sqlPort = cfg.getInt("sql.port", 3306);
-        onlineMode = cfg.getBoolean("online-mode", true);
-
         // SQL Details not yet set, disable plugin
-        if (sqlPassword.equals("password123")){
+        if (cfg.getString("sql.password", "password123").equals("password123")){
             Bukkit.getLogger().warning("[UhcStats] SQL details not set! Disabling plugin!");
             return false;
         }
+
+        databaseConnector = new MySqlConnector(
+                cfg.getString("sql.ip", "localhost"),
+                cfg.getString("sql.username", "localhost"),
+                cfg.getString("sql.password", "password123"),
+                cfg.getString("sql.database", "minecraft"),
+                cfg.getInt("sql.port", 3306)
+        );
+
+        onlineMode = cfg.getBoolean("online-mode", true);
 
         guiTitle = ChatColor.translateAlternateColorCodes('&', cfg.getString("gui-title", "&6&lUHC Stats"));
 
@@ -274,28 +263,28 @@ public class StatsManager{
     }
 
     boolean loadStatsTables(){
-        Connection connection;
-
         // Check connection
-        try {
-            connection = getSqlConnection();
-        }catch (SQLException ex){
+        if (!databaseConnector.checkConnection()){
             Bukkit.getLogger().warning("[UhcStats] Failed to connect to database! Disabling plugin!");
-            ex.printStackTrace();
             return false;
         }
 
         // Check tables
         for (GameMode gameMode : gameModes){
-            gameMode.createTable(connection, sqlDatabase);
+            createTable(gameMode);
         }
 
-        try {
-            connection.close();
-        }catch (SQLException ex){
-            ex.printStackTrace();
-        }
         return true;
+    }
+
+    void createTable(GameMode gameMode){
+        databaseConnector.createTable(
+                gameMode.getTableName(),
+                new DatabaseColumn("id", DatabaseColumn.DataType.TEXT),
+                new DatabaseColumn("kill", DatabaseColumn.DataType.INT),
+                new DatabaseColumn("death", DatabaseColumn.DataType.INT),
+                new DatabaseColumn("win", DatabaseColumn.DataType.INT)
+        );
     }
 
     void registerPlaceholders(){
@@ -351,142 +340,38 @@ public class StatsManager{
         return inv;
     }
 
-    private Connection getSqlConnection() throws SQLException{
-        Validate.isTrue(!Bukkit.isPrimaryThread(), "You may only open an connection to the database on a asynchronous thread!");
-        return DriverManager.getConnection("jdbc:mysql://" + sqlIp + ":" + sqlPort + "/" + sqlDatabase + "?autoReconnect=true&useSSL=false", sqlUsername, sqlPassword);
-    }
-
     private StatsPlayer loadStatsPlayer(String id){
         StatsPlayer player = new StatsPlayer(id);
 
-        Connection connection;
-
-        try {
-            connection = getSqlConnection();
-        }catch (SQLException ex){
-            ex.printStackTrace();
-            return null;
-        }
-
         for (GameMode gameMode : gameModes){
-            player.setGameModeStats(gameMode, loadGameModeStats(connection, id, gameMode));
+            player.setGameModeStats(gameMode, databaseConnector.loadStats(id, gameMode));
         }
 
         return player;
     }
 
-    private Map<StatType, Integer> loadGameModeStats(Connection connection, String playerId, GameMode gameMode){
-        Map<StatType, Integer> stats = getEmptyStatMap();
-
-        try {
-            Statement statement = connection.createStatement();
-            ResultSet result = statement.executeQuery("SELECT * FROM `"+gameMode.getTableName()+"` WHERE `id`='"+playerId+"'");
-
-            if (result.next()){
-                // collect stats
-                for (StatType statType : StatType.values()){
-                    stats.put(statType, result.getInt(statType.getColumnName()));
-                }
-            }else{
-                // Player not found, insert player to table.
-                insertPlayerToTable(connection, playerId, gameMode);
-            }
-
-            result.close();
-            statement.close();
-        }catch (SQLException ex){
-            ex.printStackTrace();
-        }
-
-        return stats;
-    }
-
     public List<BoardPosition> getTop10(LeaderBoard leaderBoard, StatType statType, GameMode gameMode){
-        try {
-            Connection connection = getSqlConnection();
-            Statement statement = connection.createStatement();
-            ResultSet resultSet = statement.executeQuery("SELECT `id`, `"+statType.getColumnName()+"` FROM `"+gameMode.getTableName()+"` ORDER BY `"+statType.getColumnName()+"` DESC LIMIT 10");
-            List<BoardPosition> boardPositions = new ArrayList<>();
+        List<BoardPosition> boardPositions = new ArrayList<>();
+        List<Position> positions = databaseConnector.getTop10(statType, gameMode);
 
-            int pos = 1;
-            while (resultSet.next()){
-                BoardPosition boardPosition = leaderBoard.getBoardPosition(pos);
-                if (boardPosition == null) {
-                    boardPosition = new BoardPosition(
-                            leaderBoard,
-                            pos,
-                            resultSet.getString("id"),
-                            resultSet.getInt(statType.getColumnName())
-                    );
-                }else{
-                    boardPosition.update(resultSet.getString("id"), resultSet.getInt(statType.getColumnName()));
-                }
-
-                boardPositions.add(boardPosition);
-                pos++;
+        int i = 1;
+        for (Position position : positions){
+            BoardPosition boardPosition = leaderBoard.getBoardPosition(i);
+            if (boardPosition == null){
+                boardPosition = new BoardPosition(leaderBoard, i, position.getId(), position.getValue());
+            }else{
+                boardPosition.update(position.getId(), position.getValue());
             }
+            boardPositions.add(boardPosition);
 
-            resultSet.close();
-            statement.close();
-            connection.close();
-
-            return boardPositions;
-        }catch (SQLException ex){
-            ex.printStackTrace();
-            return null;
+            i++;
         }
+
+        return boardPositions;
     }
 
-    private void pushGameModeStats(Connection connection, StatsPlayer statsPlayer, GameMode gameMode){
-        Map<StatType, Integer> stats = statsPlayer.getGameModeStats(gameMode);
-
-        try {
-            Statement statement = connection.createStatement();
-            for (StatType statType : stats.keySet()){
-                statement.executeUpdate(
-                        "UPDATE `"+gameMode.getTableName()+"` SET `" + statType.getColumnName() + "`=" + stats.get(statType) + " WHERE `id`='"+statsPlayer.getId()+"'"
-                );
-            }
-            statement.close();
-        }catch (SQLException ex){
-            Bukkit.getLogger().warning("[UhcStats] Failed to push stats for: " + statsPlayer.getId());
-            ex.printStackTrace();
-        }
-    }
-
-    private void insertPlayerToTable(Connection connection, String playerId, GameMode gameMode){
-        try {
-            StringBuilder sb = new StringBuilder("INSERT INTO `"+gameMode.getTableName()+"` (`id`");
-            for (StatType statType : StatType.values()){
-                sb.append(", `" + statType.getColumnName() + "`");
-            }
-
-            sb.append(") VALUES ('"+playerId+"'");
-
-            for (int i = 0; i < StatType.values().length; i++) {
-                sb.append(", 0");
-            }
-
-            sb.append(")");
-
-            Statement statement = connection.createStatement();
-            statement.execute(sb.toString());
-
-            statement.close();
-        }catch (SQLException ex){
-            Bukkit.getLogger().warning("[UhcStats] Failed to update stats for: " + playerId);
-            ex.printStackTrace();
-        }
-    }
-
-    private Map<StatType, Integer> getEmptyStatMap(){
-        Map<StatType, Integer> stats = new HashMap<>();
-
-        for (StatType statType : StatType.values()){
-            stats.put(statType, 0);
-        }
-
-        return stats;
+    private void pushGameModeStats(StatsPlayer statsPlayer, GameMode gameMode){
+        databaseConnector.pushStats(statsPlayer.getId(), gameMode, statsPlayer.getGameModeStats(gameMode));
     }
 
     private void loadLeaderBoards(YamlConfiguration cfg){

@@ -43,7 +43,7 @@ public class GameMode{
         return displayItem;
     }
 
-    String getTableName(){
+    public String getTableName(){
         return key.replace('-', '_') + "_stats";
     }
 

@@ -1,22 +1,31 @@
 package com.gmail.mezymc.stats.placeholders;
 
+import com.gmail.mezymc.stats.GameMode;
 import com.gmail.mezymc.stats.StatType;
+import com.gmail.mezymc.stats.StatsManager;
 import com.gmail.mezymc.stats.UhcStats;
+import com.gmail.mezymc.stats.database.DatabaseConnector;
+import com.gmail.mezymc.stats.database.Position;
+import com.gmail.mezymc.stats.utils.MojangUtils;
 import me.clip.placeholderapi.expansion.PlaceholderExpansion;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
 import java.util.List;
+import java.util.UUID;
 
 public class PlaceholderTop10 extends PlaceholderExpansion{
 
-    private List<RankingObject> top10 = null;
+    private List<Position> top10 = null;
     private long lastUpdated;
 
-    private UhcStats uhcStats;
+    private DatabaseConnector databaseConnector;
+    private GameMode gameMode;
     private StatType statType;
 
-    public PlaceholderTop10(UhcStats uhcStats, StatType statType){
-        this.uhcStats = uhcStats;
+    public PlaceholderTop10(DatabaseConnector databaseConnector, GameMode gameMode, StatType statType){
+        this.databaseConnector = databaseConnector;
+        this.gameMode = gameMode;
         this.statType = statType;
     }
 
@@ -32,14 +41,20 @@ public class PlaceholderTop10 extends PlaceholderExpansion{
 
     @Override
     public String getVersion() {
-        return uhcStats.getDescription().getVersion();
+        return UhcStats.getPlugin().getDescription().getVersion();
     }
 
     @Override
     public String onPlaceholderRequest(Player p, String params) {
         if (top10 == null || System.currentTimeMillis()-lastUpdated < UhcStats.UPDATE_DELAY){
             // update top 10
-            //top10 = uhcStats.getTop10(statType);
+            Bukkit.getScheduler().runTaskAsynchronously(UhcStats.getPlugin(), new Runnable() {
+                @Override
+                public void run() {
+                    top10 = databaseConnector.getTop10(statType, gameMode);
+                }
+            });
+
             lastUpdated = System.currentTimeMillis();
         }
 
@@ -67,20 +82,27 @@ public class PlaceholderTop10 extends PlaceholderExpansion{
             return name?"-":"0";
         }
 
-        RankingObject rankingObject = top10.get(pos-1);
-        return name?rankingObject.name:String.valueOf(rankingObject.amount);
-    }
+        Position position = top10.get(pos-1);
 
-    public static class RankingObject{
+        if (name){
+            if (position.getPlayerName() == null){
+                if (StatsManager.getStatsManager().isOnlineMode()){
+                    position.setPlayerName("Loading");
+                    Bukkit.getScheduler().runTaskAsynchronously(UhcStats.getPlugin(), new Runnable() {
+                        @Override
+                        public void run() {
+                            position.setPlayerName(MojangUtils.getPlayerName(UUID.fromString(position.getId())));
+                        }
+                    });
+                }else{
+                    position.setPlayerName(position.getId());
+                }
+            }
 
-        String name;
-        int amount;
-
-        public RankingObject(String name, int amount){
-            this.name = name;
-            this.amount = amount;
+            return position.getPlayerName();
+        }else{
+            return String.valueOf(position.getValue());
         }
-
     }
 
 }

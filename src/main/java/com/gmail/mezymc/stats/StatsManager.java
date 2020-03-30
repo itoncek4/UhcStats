@@ -8,6 +8,7 @@ import com.gmail.mezymc.stats.listeners.ConnectionListener;
 import com.gmail.mezymc.stats.listeners.GuiListener;
 import com.gmail.mezymc.stats.listeners.StatCommandListener;
 import com.gmail.mezymc.stats.listeners.UhcStatListener;
+import com.gmail.mezymc.stats.placeholders.PlaceholderTop10;
 import com.gmail.mezymc.stats.scoreboards.BoardPosition;
 import com.gmail.mezymc.stats.scoreboards.LeaderBoard;
 import com.gmail.mezymc.stats.scoreboards.LeaderboardUpdateThread;
@@ -299,13 +300,10 @@ public class StatsManager{
 
         Bukkit.getLogger().info("[UhcStats] PlaceholderAPI found, registering placeholders ...");
 
-        //new PlaceholderCount(this).register();
-/*
         for (StatType statType : StatType.values()){
-            new PlaceholderTop10(this, statType).register();
-            new PlaceholderTop10(this, statType).register();
+            new PlaceholderTop10(databaseConnector, serverGameMode, statType).register();
+            new PlaceholderTop10(databaseConnector, serverGameMode, statType).register();
         }
-*/
     }
 
     public GameMode getGameMode(String key){

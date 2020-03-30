@@ -3,7 +3,7 @@ package com.gmail.mezymc.stats.database;
 public class Position{
 
     private int position, value;
-    private String id;
+    private String id, playerName;
 
     public Position(int position, String id, int value){
         this.position = position;
@@ -21,6 +21,14 @@ public class Position{
 
     public int getValue() {
         return value;
+    }
+
+    public String getPlayerName() {
+        return playerName;
+    }
+
+    public void setPlayerName(String playerName) {
+        this.playerName = playerName;
     }
 
 }

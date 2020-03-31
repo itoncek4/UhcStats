@@ -13,6 +13,8 @@ import java.util.Map;
 
 public class MySqlConnector implements DatabaseConnector{
 
+    private Connection connection;
+
     private String ip, username, password, database;
     private int port;
 
@@ -22,6 +24,8 @@ public class MySqlConnector implements DatabaseConnector{
         this.password = password;
         this.database = database;
         this.port = port;
+
+        connection = null;
     }
 
     @Override
@@ -46,12 +50,11 @@ public class MySqlConnector implements DatabaseConnector{
 
             resultSet.close();
             statement.close();
-            connection.close();
 
             return positions;
         }catch (SQLException ex){
             ex.printStackTrace();
-            return null;
+            return new ArrayList<>();
         }
     }
 
@@ -70,7 +73,6 @@ public class MySqlConnector implements DatabaseConnector{
         try{
             statement.executeQuery("SELECT 1 FROM `"+tableName+"` LIMIT 1;").close();
             statement.close();
-            connection.close();
             return true;
         }catch (SQLException ex){
             return false;
@@ -98,7 +100,6 @@ public class MySqlConnector implements DatabaseConnector{
             Statement statement = connection.createStatement();
             statement.execute(sb.toString());
             statement.close();
-            connection.close();
         }catch (SQLException ex){
             Bukkit.getLogger().warning("[UhcStats] Failed to create table!");
             ex.printStackTrace();
@@ -116,7 +117,6 @@ public class MySqlConnector implements DatabaseConnector{
                 );
             }
             statement.close();
-            connection.close();
         }catch (SQLException ex){
             Bukkit.getLogger().warning("[UhcStats] Failed to push stats for: " + playerId);
             ex.printStackTrace();
@@ -144,7 +144,6 @@ public class MySqlConnector implements DatabaseConnector{
 
             result.close();
             statement.close();
-            connection.close();
         }catch (SQLException ex){
             ex.printStackTrace();
         }
@@ -165,7 +164,12 @@ public class MySqlConnector implements DatabaseConnector{
 
     private Connection getSqlConnection() throws SQLException{
         Validate.isTrue(!Bukkit.isPrimaryThread(), "You may only open an connection to the database on a asynchronous thread!");
-        return DriverManager.getConnection("jdbc:mysql://" + ip + ":" + port + "/" + database + "?autoReconnect=true&useSSL=false", username, password);
+        if (connection == null || connection.isClosed() || !connection.isValid(2)){
+            // new connection
+            System.out.println("[UhcStats] Creating new connection ...");
+            connection = DriverManager.getConnection("jdbc:mysql://" + ip + ":" + port + "/" + database + "?autoReconnect=true&useSSL=false", username, password);
+        }
+        return connection;
     }
 
     private void insertPlayerToTable(Connection connection, String playerId, GameMode gameMode){

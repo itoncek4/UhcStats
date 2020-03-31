@@ -51,7 +51,7 @@ public class PlaceholderTop10 extends PlaceholderExpansion{
             // update top 10
             Bukkit.getScheduler().runTaskAsynchronously(UhcStats.getPlugin(), new Runnable() {
                 @Override
-                public void run() {
+                public void run(){
                     top10 = databaseConnector.getTop10(statType, gameMode);
                 }
             });

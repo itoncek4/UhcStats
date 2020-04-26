@@ -211,6 +211,10 @@ public class StatsManager{
             Bukkit.getLogger().info("[UhcStats] No GameModes found!");
         }else{
             for (String key : section.getKeys(false)){
+                if (key.equals("server-gamemode")){
+                    continue;
+                }
+
                 String name = section.getString(key + ".name", null);
                 String displayItem = section.getString(key + ".display-item", null);
 

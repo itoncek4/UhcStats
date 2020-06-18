@@ -47,7 +47,7 @@ public class PlaceholderTop10 extends PlaceholderExpansion{
 
     @Override
     public String onPlaceholderRequest(Player p, String params) {
-        if (top10 == null || System.currentTimeMillis()-lastUpdated < UhcStats.UPDATE_DELAY){
+        if (top10 == null || System.currentTimeMillis()-lastUpdated > UhcStats.UPDATE_DELAY){
             // update top 10
             Bukkit.getScheduler().runTaskAsynchronously(UhcStats.getPlugin(), new Runnable() {
                 @Override
